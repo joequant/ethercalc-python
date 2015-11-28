@@ -1,4 +1,5 @@
 import requests
+import json
 
 def is_number(s):
     try:
@@ -36,20 +37,81 @@ class EtherCalc(object):
     def get(self, cmd):
         r = requests.get(self.root + "/_" +cmd)
         r.raise_for_status()
-        return r.json()
+        return r
+    def post(self, id, data, content_type):
+        r = requests.post(self.root + "/_" + id,
+                          data=data,
+                          headers={"Content-Type" : content_type})
+        r.raise_for_status()
+        return r
+    def put(self, id, data, content_type):
+        r = requests.put(self.root + "/_" + id,
+                          data=data,
+                          headers={"Content-Type" : content_type})
+        r.raise_for_status()
+        return r
     def cells(self, page, coord=None):
         api = ("/%s/cells" % page)
         if coord != None:
             api = api + "/" + coord
-        return self.get(api)
+        return self.get(api).json()
     def command(self, page, command):
         r = requests.post(self.root + "/_/%s" % page,
                           json = {"command" : command})
         r.raise_for_status()
         return r.json()
-    def export(self, page, format="json"):
-        if format == "json":
-            return self.get("/" + page + "/csv.json")
+    def create(self, data, format="python", id=None):
+        if id == None:
+            id = ""
+        else:
+            id = "/" + id
+        if format == "python":
+            return self.post(id, json.dumps({"snapshot": data}),
+                             "application/json")
+        elif format == "json":
+            return self.post(id, data, "application/json")
+        elif format == "csv":
+            return self.post(id, data, "text/csv")
+        elif format == "socialcalc":
+            return self.post(id, data, "text/x-socialcalc")
+        elif format == "excel":
+            return self.post(id, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    def update(self, data, format="python", id=None):
+        if id == None:
+            sid = ""
+        else:
+            sid = "/" + id
+        if format == "python":
+            return self.put(sid, json.dumps({"snapshot": data}),
+                             "application/json")
+        elif format == "json":
+            return self.put(sid, data, "application/json")
+        elif format == "csv":
+            return self.put(sid, data, "text/csv")
+        elif format == "socialcalc":
+            if id == None:
+                upload = {"snapshot" : data}
+            else:
+                upload = {"room": id, "snapshot" : data}
+            return self.post(id, json.dumps(upload),
+                             "application/json")
+        elif format == "excel":
+            return self.put(sid, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    def export(self, page, format="python"):
+        if format == "python":
+            return self.get("/" + page + "/csv.json").json()
+        elif format == "json":
+            return self.get("/" + page + "/csv.json").text
+        elif format == "socialcalc":
+            return self.get("/" + page).text
+        elif format == "html":
+            return self.get("/" + page + "/html").text
+        elif format == "csv":
+            return self.get("/" + page + "/csv").text
+        elif format == "xlsx":
+            return self.get("/" + page + "/xlsx").text
+        elif format == "md":
+            return self.get("/" + page + "/md").text
         else:
             raise ValueError
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import ethercalc
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
