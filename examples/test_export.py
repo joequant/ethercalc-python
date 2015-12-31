@@ -2,7 +2,7 @@
 import ethercalc
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
-e = ethercalc.EtherCalc("http://localhost/calc")
-pp.pprint(e.cells("daily"))
-pp.pprint(e.export("daily"))
+e = ethercalc.EtherCalc("http://localhost:8000")
+pp.pprint(e.cells("test"))
+pp.pprint(e.export("test"))
 

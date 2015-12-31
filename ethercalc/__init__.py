@@ -3,6 +3,9 @@ import json
 import re
 import datetime
 
+basedate = datetime.date(1899, 12, 30)
+basedatetime = datetime.datetime(1899, 12, 30)
+
 def is_number(s):
     try:
         float(s)
@@ -125,8 +128,7 @@ class EtherCalc(object):
         elif format == "excel":
             return self.put(sid, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     def export(self, page, format="python"):
-        if format == "python":
-            basedate = datetime.date(1899, 12, 30)
+        if format == "python":           
             cells = self.cells(page)
             (sizex, sizey) = _grid_size(cells)
             grid = [[None for _ in range(sizex)] for _ in range(sizey)]
@@ -137,7 +139,11 @@ class EtherCalc(object):
                 elif v['valuetype'] == 'b':
                     grid[y][x] = None
                 elif v['valuetype'] == 'nd':
-                    grid[y][x] = basedate + datetime.timedelta(days=int(v['datavalue']))
+                    grid[y][x] = basedate + \
+                                 datetime.timedelta(days=int(v['datavalue']))
+                elif v['valuetype'] == 'ndt':
+                    grid[y][x] = basedatetime + \
+                                 datetime.timedelta(days=float((v['datavalue'])))
                 else:
                     grid[y][x] = str(v['datavalue'])
             return grid
