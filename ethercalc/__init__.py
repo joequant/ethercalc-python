@@ -1,5 +1,7 @@
 import requests
 import json
+import re
+import datetime
 
 def is_number(s):
     try:
@@ -31,36 +33,61 @@ def set(coord, item):
             return("set %s value n %s" % (coord, item[1:]))
         return("set %s text t %s" %item)
 
+def ss_to_xy(s: str):
+    """convert spreadsheet coordinates to zero-index xy coordinates.
+    return None if input is invalid"""
+    result = re.match(r'\$*([A-Z]+)\$*([0-9]+)', s, re.I)
+    if result == None:
+        return None
+    xstring = result.group(1).upper()
+    multiplier = 1
+    x = 0
+    for i in xstring:
+        x = x * multiplier + (ord(i) - 64)
+        multiplier = multiplier * 26
+    x = x - 1
+    y = int(result.group(2))-1
+    return (x,y)
+
+def _grid_size(cells: dict):
+    maxx = -1
+    maxy = -1
+    for k, v in cells.items():
+        (x, y) = ss_to_xy(k)
+        maxx = max(x, maxx)
+        maxy = max(y, maxy)
+    return (maxx + 1, maxy+1)
+
 class EtherCalc(object):
     def __init__(self, url_root):
         self.root = url_root
-    def get(self, cmd):
+    def get(self, cmd: str):
         r = requests.get(self.root + "/_" +cmd)
         r.raise_for_status()
         return r
-    def post(self, id, data, content_type):
+    def post(self, id: str, data, content_type: str):
         r = requests.post(self.root + "/_" + id,
                           data=data,
                           headers={"Content-Type" : content_type})
         r.raise_for_status()
         return r
-    def put(self, id, data, content_type):
+    def put(self, id: str, data, content_type: str):
         r = requests.put(self.root + "/_" + id,
                           data=data,
                           headers={"Content-Type" : content_type})
         r.raise_for_status()
         return r
-    def cells(self, page, coord=None):
+    def cells(self, page: str, coord=None):
         api = ("/%s/cells" % page)
         if coord != None:
             api = api + "/" + coord
         return self.get(api).json()
-    def command(self, page, command):
+    def command(self, page: str, command):
         r = requests.post(self.root + "/_/%s" % page,
                           json = {"command" : command})
         r.raise_for_status()
         return r.json()
-    def create(self, data, format="python", id=None):
+    def create(self, data, format: str="python", id=None):
         if id == None:
             id = ""
         else:
@@ -76,7 +103,7 @@ class EtherCalc(object):
             return self.post(id, data, "text/x-socialcalc")
         elif format == "excel":
             return self.post(id, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    def update(self, data, format="python", id=None):
+    def update(self, data, format: str="python", id=None):
         if id == None:
             sid = ""
         else:
@@ -99,7 +126,21 @@ class EtherCalc(object):
             return self.put(sid, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     def export(self, page, format="python"):
         if format == "python":
-            return self.get("/" + page + "/csv.json").json()
+            basedate = datetime.date(1899, 12, 30)
+            cells = self.cells(page)
+            (sizex, sizey) = _grid_size(cells)
+            grid = [[None for _ in range(sizex)] for _ in range(sizey)]
+            for k, v in cells.items():
+                (x, y) = ss_to_xy(k)
+                if v['valuetype'] == 'n':
+                    grid[y][x] = float(v['datavalue'])
+                elif v['valuetype'] == 'b':
+                    grid[y][x] = None
+                elif v['valuetype'] == 'nd':
+                    grid[y][x] = basedate + datetime.timedelta(days=int(v['datavalue']))
+                else:
+                    grid[y][x] = str(v['datavalue'])
+            return grid
         elif format == "json":
             return self.get("/" + page + "/csv.json").text
         elif format == "socialcalc":

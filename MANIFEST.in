@@ -1,8 +1,10 @@
 include setup.py
 include *.patch
 include LICENSE
+include README.md
 include ethercalc/__init__.py
-include examples/*
+include examples/*.py
+
 
 
 
