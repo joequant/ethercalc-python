@@ -119,12 +119,7 @@ class EtherCalc(object):
         elif format == "csv":
             return self.put(sid, data, "text/csv")
         elif format == "socialcalc":
-            if id == None:
-                upload = {"snapshot" : data}
-            else:
-                upload = {"room": id, "snapshot" : data}
-            return self.post(id, json.dumps(upload),
-                             "application/json")
+            return self.put(sid, data, "text/x-socialcalc")
         elif format == "excel":
             return self.put(sid, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     def export(self, page, format="python"):
