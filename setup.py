@@ -16,7 +16,6 @@ setup(
     long_description="""A python wrapper around ethercalc API""",
     license="BSD",
     packages=['ethercalc'],
-    install_requires = ['requests'],
-    use_2to3 = True
+    install_requires = ['requests']
 )
                                 
